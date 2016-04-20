@@ -15,7 +15,12 @@ Irssi::command('^window log on');
 Irssi::command("script load $CURRENT_SCRIPT");
 Irssi::command('^window log off');
 
-my ($package) = grep { !/^_/ } keys %Irssi::Script::;
+my (@packages) = grep { !/^_/ } keys %Irssi::Script::;
+my $tp = $CURRENT_SCRIPT; $tp =~ s/^.*\///; $tp =~ s/\W/_/g; my @tmp;
+if ((@tmp = grep /^\Q$tp\E::/, @packages) or (@tmp = grep /^\Q$tp\E/, @packages)) {
+    @packages = @tmp;
+}
+my ($package) = @packages;
 
 require YAML::Tiny;
 YAML::Tiny->VERSION("1.59");
@@ -81,7 +86,8 @@ if (!defined $version) {
 else {
     $info{version} = $version;
 }
-chomp(my $loginfo = `git log 2d0759e6... -1 --format=%ai -- "$SWD/scripts/$CURRENT_SCRIPT.pl"`);
+chomp(my $loginfo = `git log 2d0759e6... -1 --format=%ai -- "$SWD/scripts/$CURRENT_SCRIPT.pl" 2>/dev/null ||
+git log -1 --format=%d%m%ai -- "$SWD/scripts/$CURRENT_SCRIPT.pl" | grep -v grafted | cut -d'>' -f2`);
 if ($loginfo) {
     my ($date, $time) = split ' ', $loginfo;
     $info{modified} = "$date $time";
